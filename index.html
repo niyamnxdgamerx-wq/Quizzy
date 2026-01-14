@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quizzy 🎉</title>
+<style>
+body {
+  margin:0;
+  font-family:'Comic Sans MS',cursive,sans-serif;
+  background: linear-gradient(135deg,#ffecd2,#fcb69f);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+}
+.header { text-align:center; margin:40px 0 20px 0; }
+.header h1 { font-size:60px; color:#ff4d6d; text-shadow:2px 2px #fff; animation:bounce 1s infinite alternate; }
+.header span { font-size:14px; display:block; color:#333; margin-top:-10px; }
+@keyframes bounce { 0% { transform:translateY(0);} 100% { transform:translateY(-20px);} }
+.header-controls { margin-bottom:20px; }
+.quiz-container { max-width:800px; margin:20px auto; padding:20px; background:#fff0f5; border-radius:20px; box-shadow:0 0 30px rgba(0,0,0,0.2);}
+button.answer { display:block; width:100%; padding:14px; margin:12px 0; border-radius:12px; border:none; cursor:pointer; font-size:18px; transition:all 0.3s; background:#ffb347; color:#fff; font-weight:bold; }
+button.answer:hover { transform:scale(1.05); background:#ffcc70; }
+select,button { padding:10px; font-size:16px; margin:10px; border-radius:8px; border:2px solid #ff4d6d; outline:none; cursor:pointer; }
+button { background:#ff4d6d; color:white; font-weight:bold; transition:0.3s; }
+button:hover { background:#ff6f91; }
+.popup { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:60px; animation:popupAnim 0.6s forwards; }
+@keyframes popupAnim { 0% { transform:scale(0); opacity:0; } 50% { transform:scale(1.5); opacity:1; } 100% { transform:scale(1); opacity:0; } }
+.x-animation { position:fixed; font-size:50px; color:red; animation:xAnim 0.6s forwards; }
+@keyframes xAnim { 0% { transform:scale(0) rotate(0deg); opacity:0;} 50% { transform:scale(1.5) rotate(45deg); opacity:1;} 100% { transform:scale(1) rotate(90deg); opacity:0;} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Quizzy 🎉</h1>
+  <span>designed by Niyam</span>
+</div>
+
+<div class="header-controls">
+  <select id="category">
+    <option value="sports">Sports</option>
+    <option value="history">History</option>
+    <option value="science">Science</option>
+  </select>
+  <button id="startBtn">Start Quiz</button>
+</div>
+
+<div id="quiz-container" class="quiz-container"></div>
+
+<script>
+// Questions
+const questions = {
+sports:[{q:"Which country won the 2022 FIFA World Cup?", a:"Argentina", options:["Argentina","France","Brazil","Germany"]},
+{q:"How many players in a football team?", a:"11", options:["10","11","12","9"]},
+{q:"Which sport uses a shuttlecock?", a:"Badminton", options:["Tennis","Badminton","Squash","Ping Pong"]},
+{q:"How many Grand Slam tennis tournaments?", a:"4", options:["3","4","5","6"]},
+{q:"Which country hosted the 2016 Olympics?", a:"Brazil", options:["Brazil","China","UK","Japan"]},
+{q:"In which sport is 'home run' used?", a:"Baseball", options:["Cricket","Baseball","Football","Hockey"]},
+{q:"Which country is famous for rugby?", a:"New Zealand", options:["Australia","New Zealand","South Africa","England"]},
+{q:"Olympic swimming pool length?", a:"50m", options:["25m","50m","100m","75m"]},
+{q:"Sport called 'king of sports'?", a:"Football", options:["Cricket","Football","Tennis","Basketball"]},
+{q:"Tennis player with most Grand Slam titles?", a:"Novak Djokovic", options:["Roger Federer","Rafael Nadal","Novak Djokovic","Serena Williams"]},
+{q:"Country won 2020 UEFA Euro Cup?", a:"Italy", options:["Italy","Spain","Germany","France"]}],
+history:[{q:"First USA President?", a:"George Washington", options:["Abraham Lincoln","Thomas Jefferson","George Washington","John Adams"]},
+{q:"Year WWII ended?", a:"1945", options:["1939","1945","1942","1946"]},
+{q:"Who discovered America?", a:"Christopher Columbus", options:["Vasco da Gama","Christopher Columbus","Magellan","Columbus"]},
+{q:"Empire ruled by Julius Caesar?", a:"Roman Empire", options:["Roman Empire","Ottoman Empire","Mongol Empire","Egyptian Empire"]},
+{q:"Great Wall is in?", a:"China", options:["China","India","Japan","Korea"]},
+{q:"Invented printing press?", a:"Johannes Gutenberg", options:["Albert Einstein","Thomas Edison","Johannes Gutenberg","Nikola Tesla"]},
+{q:"Napoleon's country?", a:"France", options:["Italy","Germany","France","Spain"]},
+{q:"Cold War start?", a:"1947", options:["1939","1947","1950","1960"]},
+{q:"First man on the moon?", a:"Neil Armstrong", options:["Buzz Aldrin","Neil Armstrong","Yuri Gagarin","Michael Collins"]},
+{q:"Declaration of Independence signed where?", a:"USA", options:["UK","France","USA","Germany"]}],
+science:[{q:"Red Planet?", a:"Mars", options:["Mars","Venus","Jupiter","Saturn"]},
+{q:"H2O is?", a:"Water", options:["Oxygen","Hydrogen","Water","Helium"]},
+{q:"Speed of light?", a:"300,000 km/s", options:["150,000 km/s","300,000 km/s","1,000 km/s","500,000 km/s"]},
+{q:"Bones in human body?", a:"206", options:["205","206","208","200"]},
+{q:"Gas plants absorb?", a:"Carbon Dioxide", options:["Oxygen","Nitrogen","Carbon Dioxide","Hydrogen"]},
+{q:"Atom center?", a:"Nucleus", options:["Proton","Electron","Nucleus","Neutron"]},
+{q:"Gold symbol?", a:"Au", options:["Ag","Au","G","Gd"]},
+{q:"Force keeping us on ground?", a:"Gravity", options:["Magnetism","Gravity","Friction","Pressure"]},
+{q:"Organ pumping blood?", a:"Heart", options:["Lungs","Heart","Liver","Kidney"]},
+{q:"Speed of light?", a:"300,000 km/s", options:["150,000 km/s","300,000 km/s","1,000 km/s","500,000 km/s"]}]
+};
+
+let currentQuestions=[];
+let currentIndex=0;
+
+document.addEventListener("DOMContentLoaded", function(){
+  const startBtn=document.getElementById("startBtn");
+  startBtn.addEventListener("click", startQuiz);
+});
+
+function startQuiz(){
+  const cat=document.getElementById("category").value;
+  currentQuestions=[...questions[cat]];
+  currentIndex=0;
+  showQuestion();
+}
+
+function showQuestion(){
+  const container=document.getElementById("quiz-container");
+  if(currentIndex>=currentQuestions.length){
+    container.innerHTML="<h2>Quiz Finished! 🎉</h2>";
+    return;
+  }
+  const q=currentQuestions[currentIndex];
+  container.innerHTML="";
+  const questionEl=document.createElement("h2");
+  questionEl.innerText=q.q;
+  container.appendChild(questionEl);
+  q.options.forEach(opt=>{
+    const btn=document.createElement("button");
+    btn.className="answer";
+    btn.innerText=opt;
+    btn.addEventListener("click",()=>checkAnswer(opt));
+    container.appendChild(btn);
+  });
+}
+
+function checkAnswer(ans){
+  const correct=currentQuestions[currentIndex].a;
+  if(ans===correct){ showPopup("🎇"); showConfetti(); }
+  else showXAnimation("❌");
+  currentIndex++;
+  setTimeout(showQuestion,700);
+}
+
+function showPopup(char){
+  const p=document.createElement("div");
+  p.className="popup";
+  p.innerText=char;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),600);
+}
+
+function showXAnimation(char){
+  const p=document.createElement("div");
+  p.className="x-animation";
+  p.style.top=Math.random()*60+"%";
+  p.style.left=Math.random()*80+"%";
+  p.innerText=char;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),600);
+}
+
+function showConfetti(){
+  for(let i=0;i<30;i++){
+    const c=document.createElement("div");
+    c.className="x-animation";
+    c.style.top=Math.random()*60+"%";
+    c.style.left=Math.random()*80+"%";
+    c.style.color=["#ff4d6d","#ffb347","#ffcc70","#33cc33","#3399ff"][Math.floor(Math.random()*5)];
+    c.style.fontSize=(10+Math.random()*40)+"px";
+    c.innerText="🎉";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),1000);
+  }
+}
+</script>
+</body>
+</html>
